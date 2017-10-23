@@ -39,14 +39,14 @@ def unescape(text):
                 text = chr(name2codepoint[text[1:-1]])
             except KeyError:
                 pass
-        return text # leave as is
+        return text  # leave as is
     return re.sub("&#?\w+;", fixup, text)
 
 
 def cleanText(text):
     text = text.lower()
     soup = BeautifulSoup(unescape(text), "html.parser")
-    text = soup.get_text() #nltk.clean_html(unescape(text))
+    text = soup.get_text()  # nltk.clean_html(unescape(text))
 
     tokens = word_tokenize(text)
     new_tokens = []
@@ -54,18 +54,19 @@ def cleanText(text):
         nt = regex.sub(u'', t)
         if not nt == u'' and nt not in stopwords.words('english'):
             new_tokens.append(wordnet.lemmatize(nt))
-    
+
     return " ".join(new_tokens)
 
 
 def main():
     result = ""
     try:
-         conn = psycopg2.connect(host=DB_ENDPOINT, port=DB_PORT, user=DB_USERNAME, password=DB_PASSWORD, dbname=DB_NAME)
-         cur = conn.cursor()
-         curins = conn.cursor()
+        conn = psycopg2.connect(host=DB_ENDPOINT, port=DB_PORT,
+                                user=DB_USERNAME, password=DB_PASSWORD, dbname=DB_NAME)
+        cur = conn.cursor()
+        curins = conn.cursor()
 
-         sql = """
+        sql = """
             SELECT
             q.id               AS qid,
             q.tags             AS qtags,
@@ -86,25 +87,24 @@ def main():
                                 GROUP BY q1.id)
             ORDER BY q.id;
          """
-         cur.execute(sql)
-         result = cur.fetchone()
-         while(result):
-             result = list(result)
-             for i in [2,3,7]:
+        cur.execute(sql)
+        result = cur.fetchone()
+        while(result):
+            result = list(result)
+            for i in [2, 3, 7]:
                 result[i] = cleanText(result[i])
-            
-             insert_sql = cur.mogrify("""INSERT INTO postscleaned (qid, qtags, qtitle, qbody, acceptedans, aid, ascore, abody)
+
+            insert_sql = cur.mogrify("""INSERT INTO postscleaned (qid, qtags, qtitle, qbody, acceptedans, aid, ascore, abody)
                             VALUES(%s, %s, %s, %s, %s, %s, %s, %s);""", result)
-             curins.execute(insert_sql)
-             conn.commit()
-             print(result[0])
-             result = cur.fetchone()
+            curins.execute(insert_sql)
+            conn.commit()
+            print(result[0])
+            result = cur.fetchone()
     except Exception as err:
         print("ERR: ")
         print(err)
         print(result)
 
-    
 
 if __name__ == "__main__":
     main()
