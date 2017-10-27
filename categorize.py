@@ -3,6 +3,8 @@ import re
 import os
 import datetime
 import csv
+import random
+import copy
 
 DB_NAME = 'buntu'
 DB_ENDPOINT = 'localhost'
@@ -30,17 +32,16 @@ def getPostsByTags():
         curins = conn.cursor()
 
         sql = """
-            SELECT *
-            FROM postscleaned
-            ORDER BY qid;
+            SELECT qtags, qtitle, qbody, abody
+            FROM postscleaned;
          """
         cur.execute(sql)
         result = cur.fetchone()
         while(result):
-            for tag in getTags(result[1]):
+            for tag in getTags(result[0]):
                 if tag not in postsByTags:
                     postsByTags[tag] = []
-                postsByTags[tag].append(result)
+                postsByTags[tag].append(list(result))
 
             print(result[0])
             result = cur.fetchone()
@@ -65,6 +66,28 @@ def toCSV(postBytags):
         print("ERR: ")
         print(err)
 
+
+def random_answer(posts):
+    cats = list(posts.keys())
+    outposts = {}
+    for c in cats:
+        outposts[c] = []
+        for rec in posts[c]:
+            
+            rc = random.choice(cats)
+            ra = random.choice(posts[rc])
+            
+            wrec = copy.deepcopy(rec)
+            wrec[-1] = ra[-1]
+            
+            rec.append(1)
+            outposts[c].append(tuple(rec))
+            wrec.append(0)
+            outposts[c].append(tuple(wrec))
+    return outposts
+
+
 if __name__ == "__main__":
     p = getPostsByTags()
+    p=random_answer(p)
     toCSV(p)
