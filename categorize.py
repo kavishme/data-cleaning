@@ -62,6 +62,7 @@ def toCSV(postBytags):
             with open(os.path.join(outdir, tag+".csv"), 'w') as of:
                 wr = csv.writer(of, quoting=csv.QUOTE_ALL)
                 wr.writerows(postBytags[tag])
+        return outdir
     except Exception as err:
         print("ERR: ")
         print(err)
@@ -86,8 +87,20 @@ def random_answer(posts):
             outposts[c].append(tuple(wrec))
     return outposts
 
+def cat_count(posts, dir):
+    filepath = os.path.join(dir,"cat_count.csv")
+    f = open(filepath, 'w')
+    t = []
+    for p in posts:
+        t.append( (p,len(posts[p])) )
+    t = sorted(t, key=lambda lts: lts[1])
+    wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+    wr.writerows(t)
+    f.close()
 
 if __name__ == "__main__":
     p = getPostsByTags()
-    p=random_answer(p)
-    toCSV(p)
+    #p=random_answer(p)
+    dir = toCSV(p)
+    cat_count(p, dir)
+
