@@ -5,6 +5,7 @@ import datetime
 import csv
 import random
 import copy
+import json
 
 DB_NAME = 'buntu'
 DB_ENDPOINT = 'localhost'
@@ -115,7 +116,8 @@ def filterbySize(posts, minl, maxl, filterIndex):
     for c in cats:
         outposts[c] = []
         for rec in posts[c]:
-            data = rec[filterIndex]
+            data = str(rec[filterIndex])
+            # print(data)
             data = data.split()
             if len(data)>= minl and len(data)<=maxl:
                 outposts[c].append(rec)
@@ -127,8 +129,11 @@ def wordToVec(posts):
     for c in cats:
         for rec in posts[c]:
             # 0:"qtags", 1:"qtitle", 2:"qbody", 3:"abody", 4:"label"
-            data = rec[1] + rec[2] + rec[3]
-            for word in data.split():
+            data = []
+            for i in [1,2,3]:
+                data.extend(str(rec[i]).split())
+
+            for word in data:
                 bagOfWords[word] = 0
     
     i = 0
@@ -140,15 +145,16 @@ def wordToVec(posts):
     for c in cats:
         outposts[c] = []
         for rec in posts[c]:
-            data = rec[filterIndex]
-            data = data.split()
-            if len(data)>= minl and len(data)<=maxl:
-                outposts[c].append(rec)
-    return outposts
+            vecRec = []
+            vecRec.append(rec[0])
+            
+            for i in [1,2,3]:
+                vecRec.append(' '.join( [str(bagOfWords[word]) for word in str(rec[i]).split()] ))
+            
+            vecRec.extend(rec[4:])
+            outposts[c].append(tuple(vecRec))
 
-    
-    return bagOfWords
-
+    return outposts, bagOfWords
 
 if __name__ == "__main__":
     p = getPostsByTags()
@@ -157,7 +163,21 @@ if __name__ == "__main__":
     p = randomizeAnswerAndLabel(p)
 
     # filterIndex 0:"qtags", 1:"qtitle", 2:"qbody", 3:"abody", 4:"label"
-    p = filterbySize(p, 15, 80, 3)
+    # filter all records for abody of min length 15 and max length of 90
+    p = filterbySize(p, 15, 90, 3)
+
+    # convert words to numerical representation
+    p, bag = wordToVec(p)
+    
+    #write all data to single csv file 
     outdir = toCSV(p, True)
+
+    # write of bag of words to json file to reference
+    bagstr = json.dumps(bag)
+    f = open(os.path.join(outdir, "bagOfWords.json", 'w'))
+    f.write(bagstr)
+    f.close()
+
+    #write question count of each category to a file
     cat_count(p, outdir)
 
