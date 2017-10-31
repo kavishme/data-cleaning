@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     # write of bag of words to json file to reference
     bagstr = json.dumps(bag)
-    f = open(os.path.join(outdir, "bagOfWords.json", 'w'))
+    f = open(os.path.join(outdir, "bagOfWords.json"), 'w')
     f.write(bagstr)
     f.close()
 
