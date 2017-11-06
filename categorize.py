@@ -79,6 +79,37 @@ def toCSV(postBytags, singleFile=False, filename="all_data.csv"):
         print(err)
 
 
+"""
+Store posts to CSV files by tags
+"""
+def Ekta_toCSV(postBytags, singleFile=False, filename="all_data.csv"):
+    try:
+        outdir = "output_" + datetime.datetime.now().strftime('%Y%d%m%H%M')
+        os.makedirs(outdir)
+        header=["qbody","abody","label"]
+        count=0;
+        if not singleFile:
+            for tag in postBytags:
+                with open(os.path.join(outdir, tag+".csv"), 'w') as of:
+                    wr = csv.writer(of, quoting=csv.QUOTE_ALL)
+                    #wr.writerow(header)
+                    for post in postBytags[tag]:
+                        if count<100000:
+                            wr.writerow(post[2:])
+                            count+=1
+        else:
+            with open(os.path.join(outdir, filename), 'w') as of:
+                wr = csv.writer(of, quoting=csv.QUOTE_ALL)
+                wr.writerow(header)
+                for tag in postBytags:
+                    for post in postBytags[tag]:
+                        wr.writerow(post[2:])
+        return outdir
+    except Exception as err:
+        print("ERR: ")
+        print(err)
+
+
 def randomizeAnswerAndLabel(posts):
     cats = list(posts.keys())
     outposts = {}
@@ -160,24 +191,26 @@ if __name__ == "__main__":
     p = getPostsByTags()
     
     # adds label 0 and 1
+    p, v = getValidationSet(p)
+    p, t = getTestSet(p)
+    
     p = randomizeAnswerAndLabel(p)
-
     # filterIndex 0:"qtags", 1:"qtitle", 2:"qbody", 3:"abody", 4:"label"
     # filter all records for abody of min length 15 and max length of 90
-    p = filterbySize(p, 15, 90, 3)
+    # p = filterbySize(p, 15, 90, 3)
 
     # convert words to numerical representation
-    p, bag = wordToVec(p)
+    # p, bag = wordToVec(p)
     
     #write all data to single csv file 
-    outdir = toCSV(p, True)
+    outdir = Ekta_toCSV(p, True)
 
     # write of bag of words to json file to reference
-    bagstr = json.dumps(bag)
-    f = open(os.path.join(outdir, "bagOfWords.json"), 'w')
-    f.write(bagstr)
-    f.close()
+    # bagstr = json.dumps(bag)
+    # f = open(os.path.join(outdir, "bagOfWords.json"), 'w')
+    # f.write(bagstr)
+    # f.close()
 
     #write question count of each category to a file
-    cat_count(p, outdir)
+    # cat_count(p, outdir)
 
