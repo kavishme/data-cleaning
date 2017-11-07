@@ -82,12 +82,12 @@ def toCSV(postBytags, singleFile=False, filename="all_data.csv"):
 """
 Store posts to CSV files by tags
 """
-def Ekta_toCSV(postBytags, singleFile=False, filename="all_data.csv"):
+def Ekta_toCSV(postBytags, singleFile=False, filename="train.csv"):
     try:
         outdir = "output_" + datetime.datetime.now().strftime('%Y%d%m%H%M')
         os.makedirs(outdir)
         header=["qbody","abody","label"]
-        count=0;
+        count=0
         if not singleFile:
             for tag in postBytags:
                 with open(os.path.join(outdir, tag+".csv"), 'w') as of:
@@ -187,23 +187,82 @@ def wordToVec(posts):
 
     return outposts, bagOfWords
 
+def getTestValSet(posts):
+    val = []
+    test = []
+
+    for tag in posts:
+        print("Val and test data for " + tag)
+        total = len(posts[tag])
+        valSamples = int(total*0.15)
+        testSamples = int(total*0.25)
+        rvals = random.sample(posts[tag], valSamples)
+        for rv in rvals:
+            posts[tag].remove(rv)
+        
+        rtests = random.sample(posts[tag], testSamples)
+        for rt in rtests:
+            posts[tag].remove(rt)
+        
+        val.extend(rvals)
+        test.extend(rtests)
+    
+    return (posts, val, test)
+
+
+def addDistraction(vals, distractions, fpath):
+    header = ["qbody", "abody", "distraction_0", "distraction_1", "distraction_2", "distraction_3",
+            "distraction_4", "distraction_5", "distraction_6", "distraction_7", "distraction_8"]
+    f = open(fpath, "w")
+    wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+    wr.writerow(header)
+    for elem in vals:
+        wrdata = elem[2:]
+        dist = random.sample(distractions, 9)
+        for d in dist:
+            wrdata.append(d[-1])
+        wr.writerow(wrdata)
+    f.close()
+
+def createDictionary(posts):
+    dlist = []
+    for tag in posts:
+        for elem in posts[tag]:
+            dlist.append(elem[2:])
+    
+    # ddict = {}
+    # for i, word in enumerate(dlist):
+    #     ddict[word] = i
+    
+    f = open("dictionary.csv", "w")
+    wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+    wr.writerows(dlist)
+    f.close()
+
 if __name__ == "__main__":
     p = getPostsByTags()
-    
+    # print("Creating dictionary")
+    # createDictionary(p)
+
+    print("Selecting val and test set")
+    p, val, test = getTestValSet(p)
+
+    print("Adding lables to train data")
     # adds label 0 and 1
-    p, v = getValidationSet(p)
-    p, t = getTestSet(p)
-    
     p = randomizeAnswerAndLabel(p)
+    #write all data to single csv file 
+    outdir = Ekta_toCSV(p, True)
+
+    print("Adding distractions to lable and test data")
+    addDistraction(val, test, os.path.join(outdir, "valid.csv"))
+    addDistraction(test, val, os.path.join(outdir, "test.csv"))
+
     # filterIndex 0:"qtags", 1:"qtitle", 2:"qbody", 3:"abody", 4:"label"
     # filter all records for abody of min length 15 and max length of 90
     # p = filterbySize(p, 15, 90, 3)
 
     # convert words to numerical representation
     # p, bag = wordToVec(p)
-    
-    #write all data to single csv file 
-    outdir = Ekta_toCSV(p, True)
 
     # write of bag of words to json file to reference
     # bagstr = json.dumps(bag)
